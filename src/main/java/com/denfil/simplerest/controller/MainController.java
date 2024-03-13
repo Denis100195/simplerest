@@ -1,47 +1,48 @@
 package com.denfil.simplerest.controller;
 
 import com.denfil.simplerest.dto.Cat;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import com.denfil.simplerest.repo.CatRepo;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
+@Slf4j
 @RestController
 public class MainController {
+    private CatRepo catRepo;
 
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @GetMapping("/api/main")
-    public String mainListener(){
-        return "Hello World!";
+    public MainController(CatRepo catRepo){
+        this.catRepo = catRepo;
     }
-    @GetMapping("/api/get")
-    public String getCat(){
-        Cat cat = new Cat("Barsik", 5, 15);
-        String jsonData = null;
-        try {
-            jsonData = objectMapper.writeValueAsString(cat);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("error with cat");
+    @PostMapping("/api/add")
+    public void addCat(@RequestBody Cat cat){
+        catRepo.save(cat);
+        log.info("New row" + cat);
+    }
+    @GetMapping("/api/all")
+    public List<Cat> getAll(){
+        List<Cat> catList = catRepo.findAll();
+        return catList;
+    }
+    @GetMapping("/api/getById/{id}")
+    public Cat getCat(@PathVariable(name = "id") Integer id){
+        return catRepo.findById(id).orElseThrow();
+    }
+    @DeleteMapping("/api/deleteById/{id}")
+    public void deleteCatById(@PathVariable(name="id") Integer id){
+        if (catRepo.findById(id).isPresent()){
+            catRepo.deleteById(id);
+            log.info("Cat with ID: " + id + " WAS DELETED");
         }
-        return jsonData;
+        else log.info("Cat with ID: " + id + " does not exist");
     }
-    @GetMapping("/api/getcat")
-    public Cat getMyCat(){
-        return new Cat("Alex", 10, 14);
-    }
-    @PostMapping("/api/special")
-    public String getSpecialCat(@RequestParam String name){
-        try {
-            return objectMapper.writeValueAsString(
-                    new Cat(name, 12, 13)
-            );
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Error with name");
+    @PutMapping("/api/")
+    public void changeCat(@RequestBody Cat cat){
+        if (catRepo.findById(cat.getId()).isPresent()){
+            catRepo.save(cat);
+            log.info("Cat with ID: " + cat.getId() + " WAS CHANGED");
         }
+        else log.info("Cat with ID: " + cat.getId() + " does not exist");
     }
 }
